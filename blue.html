@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>点我试试</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            balloon: '#93C5FD', // 淡蓝色气球
+            background: '#FFC0CB', // 粉红色背景
+          },
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .balloon-shadow {
+        box-shadow: inset -10px -10px 15px rgba(0, 0, 0, 0.1),
+                    inset 10px 10px 15px rgba(255, 255, 255, 0.5);
+      }
+      .pulse-slow {
+        animation: pulse 3s infinite;
+      }
+      .float {
+        animation: float 3s ease-in-out infinite;
+      }
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+      }
+      @keyframes explode {
+        0% { transform: scale(1); opacity: 1; }
+        70% { transform: scale(1.5); opacity: 1; }
+        100% { transform: scale(2); opacity: 0; }
+      }
+      .explode {
+        animation: explode 1s forwards;
+      }
+    }
+  </style>
+</head>
+<body class="bg-background min-h-screen flex items-center justify-center overflow-hidden cursor-pointer" id="app">
+  <!-- 气球元素 -->
+  <div id="balloon" class="w-16 h-16 rounded-full bg-balloon balloon-shadow float transition-all duration-500 ease-out"></div>
+  
+  <!-- 爆炸碎片容器 -->
+  <div id="particles" class="fixed inset-0 pointer-events-none"></div>
+
+  <script>
+    // 获取DOM元素
+    const balloon = document.getElementById('balloon');
+    const app = document.getElementById('app');
+    const particlesContainer = document.getElementById('particles');
+    
+    // 气球状态
+    let isAnimating = false;
+    let currentSize = 64; // 初始大小 (16rem = 64px)
+    const maxSize = 300;  // 最大大小
+    const growthRate = 15; // 每次点击增长的大小
+    
+    // 点击事件处理
+    app.addEventListener('click', (e) => {
+      // 避免重复动画
+      if (isAnimating) return;
+      
+      // 增加气球大小
+      currentSize += growthRate;
+      balloon.style.width = `${currentSize}px`;
+      balloon.style.height = `${currentSize}px`;
+      
+      // 模拟水气球的膨胀效果 - 越接近爆炸越不规则
+      const scaleFactor = currentSize / maxSize;
+      const wobble = 1 + (Math.sin(Date.now() / 100) * 0.05 * scaleFactor);
+      balloon.style.transform = `scale(${wobble})`;
+      
+      // 检查是否达到爆炸条件
+      if (currentSize >= maxSize) {
+        explodeBalloon();
+      }
+    });
+    
+    // 气球爆炸效果
+    function explodeBalloon() {
+      isAnimating = true;
+      
+      // 应用爆炸动画
+      balloon.classList.add('explode');
+      
+      // 创建爆炸碎片
+      createParticles(balloon.getBoundingClientRect());
+      
+      // 重置气球
+      setTimeout(() => {
+        balloon.classList.remove('explode');
+        currentSize = 64;
+        balloon.style.width = `${currentSize}px`;
+        balloon.style.height = `${currentSize}px`;
+        balloon.style.transform = 'scale(1)';
+        
+        // 清除碎片
+        setTimeout(() => {
+          particlesContainer.innerHTML = '';
+          isAnimating = false;
+        }, 1000);
+      }, 1000);
+    }
+    
+    // 创建爆炸碎片
+    function createParticles(rect) {
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const particleCount = 20;
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        
+        // 随机碎片样式
+        const size = Math.random() * 15 + 5;
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 80 + 40;
+        const x = centerX + Math.cos(angle) * distance;
+        const y = centerY + Math.sin(angle) * distance;
+        
+        // 设置碎片样式
+        particle.style.cssText = `
+          position: absolute;
+          width: ${size}px;
+          height: ${size}px;
+          background-color: rgba(147, 197, 253, 0.8);
+          border-radius: ${Math.random() > 0.5 ? '50%' : '0'};
+          left: ${x}px;
+          top: ${y}px;
+          transform: translate(-50%, -50%);
+          opacity: 0;
+          box-shadow: inset -2px -2px 5px rgba(0, 0, 0, 0.1);
+          animation: particle-fall ${Math.random() * 1 + 1}s forwards;
+        `;
+        
+        particlesContainer.appendChild(particle);
+      }
+      
+      // 添加碎片下落动画
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes particle-fall {
+          0% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, calc(-50% + 100px)) rotate(720deg) scale(0.3);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  </script>
+</body>
+</html>
